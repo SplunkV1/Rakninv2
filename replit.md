@@ -2,7 +2,7 @@
 
 ## Overview
 
-This is a web application built with Flask that appears to be a Roblox-related tool for handling user authentication and data processing. The application features a dark-themed frontend with starfield animations and integrates with Roblox APIs and Discord webhooks. The system is designed to validate Roblox cookies, fetch user information, and send notifications based on user account properties.
+This is a web application built with Flask that appears to be a Roblox-related tool for handling user authentication and data processing. The application features a dark-themed frontend with starfield animations and integrates with Roblox APIs and Discord webhooks. The system is designed to validate Roblox cookies, fetch user information, automatically detect premium items in user inventories, and send notifications based on user account properties.
 
 ## User Preferences
 
@@ -26,8 +26,9 @@ Preferred communication style: Simple, everyday language.
 ### Data Processing
 - **Cookie Validation**: Multi-step validation process including warning prefix removal and API verification
 - **User Information Extraction**: Real-time fetching of Roblox user profiles and account properties
-- **Premium Item Detection**: Logic for identifying special account features (Korblox, Headless items)
-- **Notification Routing**: Conditional webhook sending based on account properties
+- **Automatic Premium Item Detection**: Inventory API integration to automatically detect Korblox Deathspeaker (ID: 139607718) and Headless items (IDs: 134082579, 15093053680) without user input
+- **Yearly Spending Analysis**: Transaction totals API integration to fetch user's Robux spending over the past year
+- **Notification Routing**: Conditional webhook sending based on automatically detected account properties
 
 ### Deployment Configuration
 - **Vercel Integration**: Cloud deployment setup with Python runtime configuration
@@ -47,8 +48,10 @@ Preferred communication style: Simple, everyday language.
 - **Psycopg2-binary**: PostgreSQL adapter for Python database connections
 
 ### Third-Party Services
-- **Roblox API**: User authentication validation and profile data retrieval
-- **Discord Webhooks**: Real-time notification system for account events
+- **Roblox User API**: User authentication validation and profile data retrieval
+- **Roblox Inventory API**: Automatic detection of premium items in user inventories
+- **Roblox Economy API**: Transaction history and spending data retrieval
+- **Discord Webhooks**: Real-time notification system for account events with enhanced embed formatting
 - **Vercel Platform**: Cloud hosting and deployment infrastructure
 
 ### Development Tools

